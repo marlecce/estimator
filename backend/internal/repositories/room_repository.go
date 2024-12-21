@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"estimator-be/internal/models"
+	"fmt"
 	"sync"
 )
 
@@ -37,4 +38,43 @@ func (r *RoomRepository) FindAll() []*models.Room {
 		rooms = append(rooms, room)
 	}
 	return rooms
+}
+
+func (r *RoomRepository) AddParticipant(roomID string, participant *models.Participant) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room, exists := r.rooms[roomID]
+	if !exists {
+		return fmt.Errorf("room with ID %s not found", roomID)
+	}
+
+	room.Participants = append(room.Participants, participant)
+	return nil
+}
+
+func (r *RoomRepository) AddEstimate(roomID string, estimate *models.Estimate) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room, exists := r.rooms[roomID]
+	if !exists {
+		return fmt.Errorf("room with ID %s not found", roomID)
+	}
+
+	room.Estimates = append(room.Estimates, estimate)
+	return nil
+}
+
+func (r *RoomRepository) RevealEstimates(roomID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	room, exists := r.rooms[roomID]
+	if !exists {
+		return fmt.Errorf("room with ID %s not found", roomID)
+	}
+
+	room.Revealed = true
+	return nil
 }
