@@ -1,23 +1,27 @@
 package main
 
 import (
-	"fmt"
+	"estimator-be/internal/api"
+	"estimator-be/internal/repositories"
+	"estimator-be/internal/services"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	http.HandleFunc("/create-room", createRoom)
-	http.HandleFunc("/join-room", joinRoom)
+	r := mux.NewRouter()
 
-	fmt.Println("Server running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
+	roomRepo := repositories.NewRoomRepository()
+	roomService := services.NewRoomService(roomRepo)
 
-func createRoom(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Room created")
-}
+	api.RegisterRoomRoutes(r, roomService)
 
-func joinRoom(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Joined room")
+	port := "8181"
+
+	log.Printf("Server running on http://localhost:%s", port)
+	if err := http.ListenAndServe(":"+port, r); err != nil {
+		log.Fatalf("Error running the server: %v", err)
+	}
 }
