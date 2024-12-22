@@ -1,6 +1,6 @@
 package models
 
-type EstimateRequest struct {
-	ParticipantID string  `json:"participant_id"`
-	Value         float64 `json:"value"`
+type CreateRoomRequest struct {
+	Name           string `json:"name"`
+	EstimationType string `json:"estimation_type"`
 }

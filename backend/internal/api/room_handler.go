@@ -31,7 +31,7 @@ func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roomID := h.roomService.CreateRoom(req.Name)
+	roomID := h.roomService.CreateRoom(req.Name, req.EstimationType)
 
 	resp := map[string]string{"room_id": roomID}
 	w.Header().Set("Content-Type", "application/json")
@@ -106,9 +106,10 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]interface{}{
-		"name":         roomDetails.Name,
-		"participants": roomDetails.Participants,
-		"revealed":     roomDetails.Revealed,
+		"name":            roomDetails.Name,
+		"participants":    roomDetails.Participants,
+		"revealed":        roomDetails.Revealed,
+		"estimation_type": roomDetails.EstimationType,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)

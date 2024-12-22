@@ -5,6 +5,8 @@ import (
 	"estimator-be/internal/repositories"
 	"fmt"
 	"math/rand"
+
+	"github.com/google/uuid"
 )
 
 type RoomService struct {
@@ -15,12 +17,23 @@ func NewRoomService(repo *repositories.RoomRepository) *RoomService {
 	return &RoomService{repo: repo}
 }
 
-func (s *RoomService) CreateRoom(name string) string {
-	roomID := fmt.Sprintf("%06d", rand.Intn(1000000))
+func (s *RoomService) CreateRoom(name string, estimationType string) string {
+	var validType models.EstimationType
+	switch estimationType {
+	case string(models.EstimationHours), string(models.EstimationDays), string(models.EstimationStoryPoints):
+		validType = models.EstimationType(estimationType)
+	default:
+		validType = models.EstimationStoryPoints // Default type
+	}
+
+	roomID := uuid.New().String()
 
 	room := &models.Room{
-		ID:   roomID,
-		Name: name,
+		ID:             roomID,
+		Name:           name,
+		Participants:   []*models.Participant{},
+		Estimates:      []*models.Estimate{},
+		EstimationType: validType,
 	}
 	s.repo.Save(room)
 
