@@ -8,20 +8,26 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 func main() {
-	r := mux.NewRouter()
+	router := mux.NewRouter()
 
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
 
-	api.RegisterRoomRoutes(r, roomService)
+	apiRouter := router.PathPrefix("/api").Subrouter()
+	api.RegisterRoomRoutes(apiRouter, roomService)
+
+	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./frontend/dist/"))))
+
+	handler := cors.Default().Handler(router)
 
 	port := "8181"
 
 	log.Printf("Server running on http://localhost:%s", port)
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Error running the server: %v", err)
 	}
 }

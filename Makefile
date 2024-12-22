@@ -11,9 +11,9 @@ GO_TEST := cd $(BACKEND_DIR) && go test ./...
 GO_BUILD := cd $(BACKEND_DIR) && go build -o bin/$(PROJECT_NAME) cmd/app/main.go
 
 # FE commands
-#NPM_INSTALL := cd $(FRONTEND_DIR) && npm install
-#NPM_BUILD := cd $(FRONTEND_DIR) && npm run build
-#NPM_DEV := cd $(FRONTEND_DIR) && npm run dev
+NPM_INSTALL := cd $(FRONTEND_DIR) && npm install
+NPM_BUILD := cd $(FRONTEND_DIR) && npm run build
+NPM_DEV := cd $(FRONTEND_DIR) && npm run dev
 
 # 🛠️ Main commands
 .PHONY: all backend frontend
@@ -23,8 +23,8 @@ all: backend frontend
 backend: 
 	$(GO_BUILD)
 
-#frontend:
-#	$(NPM_BUILD)
+frontend:
+	$(NPM_BUILD)
 
 # 👷‍♀️ BE commands
 run-backend:
@@ -40,13 +40,13 @@ test-backend:
 install-frontend:
 	$(NPM_INSTALL)
 
-#build-frontend:
-#	$(NPM_BUILD)
+build-frontend:
+	$(NPM_BUILD)
 
-#dev-frontend:
-#	$(NPM_DEV)
+dev-frontend:
+	$(NPM_DEV)
 
-# 🧹 Pulizia
+# 🧹 clean up
 clean:
 	rm -rf $(BACKEND_DIR)/bin
-#	rm -rf $(FRONTEND_DIR)/node_modules
+	rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist
