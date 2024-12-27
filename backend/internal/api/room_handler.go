@@ -95,6 +95,17 @@ func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hub, exists := h.hubService.GetHub(roomID)
+	if exists {
+		message := map[string]interface{}{
+			"type":        "estimate_notification",
+			"participant": req.ParticipantID,
+			"message":     "A participant has made an estimate.",
+		}
+		msg, _ := json.Marshal(message)
+		hub.Broadcast <- msg
+	}
+
 	resp := map[string]string{"status": "success"}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
@@ -108,6 +119,16 @@ func (h *RoomHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	hub, exists := h.hubService.GetHub(roomID)
+	if exists {
+		message := map[string]interface{}{
+			"type":      "estimates_revealed",
+			"estimates": estimates,
+		}
+		msg, _ := json.Marshal(message)
+		hub.Broadcast <- msg
 	}
 
 	resp := map[string]interface{}{"estimates": estimates}

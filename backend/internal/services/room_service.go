@@ -53,8 +53,29 @@ func (s *RoomService) AddParticipant(roomID, name string) (string, error) {
 }
 
 func (s *RoomService) AddEstimate(roomID, participantID string, value float64) error {
-	estimate := &models.Estimate{ParticipantID: participantID, Value: value}
-	return s.repo.AddEstimate(roomID, estimate)
+	room, roomExist := s.repo.FindByID(roomID)
+	if !roomExist {
+		return fmt.Errorf("room not found: %s", roomID)
+	}
+
+	if room.Revealed {
+		return fmt.Errorf("cannot add estimate, room estimates already revealed")
+	}
+
+	for _, estimate := range room.Estimates {
+		if estimate.ParticipantID == participantID {
+			return fmt.Errorf("participant has already estimated")
+		}
+	}
+
+	room.Estimates = append(room.Estimates, &models.Estimate{
+		ParticipantID: participantID,
+		Value:         value,
+	})
+
+	s.repo.Save(room)
+
+	return nil
 }
 
 func (s *RoomService) RevealEstimates(roomID string) ([]*models.Estimate, error) {
