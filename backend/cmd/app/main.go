@@ -16,9 +16,10 @@ func main() {
 
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
+	hubService := services.NewHubService()
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
-	api.RegisterRoomRoutes(apiRouter, roomService)
+	api.RegisterRoomRoutes(apiRouter, roomService, hubService)
 
 	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./frontend/dist/"))))
 

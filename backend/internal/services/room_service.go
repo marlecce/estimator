@@ -23,7 +23,7 @@ func (s *RoomService) CreateRoom(name string, estimationType string) string {
 	case string(models.EstimationHours), string(models.EstimationDays), string(models.EstimationStoryPoints):
 		validType = models.EstimationType(estimationType)
 	default:
-		validType = models.EstimationStoryPoints // Default type
+		validType = models.EstimationStoryPoints
 	}
 
 	roomID := uuid.New().String()
@@ -48,6 +48,7 @@ func (s *RoomService) AddParticipant(roomID, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return participantID, nil
 }
 

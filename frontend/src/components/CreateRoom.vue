@@ -1,35 +1,48 @@
 <template>
   <div>
-    <h1>Create Room</h1>
-    <input v-model="roomName" placeholder="Room Name" />
-    <button @click="createRoom">Create</button>
-    <div v-if="roomLink">
-      <p>Room Created! <router-link :to="roomLink">Go to Room</router-link></p>
+    <h1>Create a Room</h1>
+    <p>Enter a name for the room.</p>
+    <input v-model="name" placeholder="Room Name" />
+    <button @click="createRoom">Create Room</button>
+
+    <div v-if="roomId">
+      <p>Room created! Share this link with participants:</p>
+      <input v-model="shareLink" readonly />
+      <button @click="copyLink">Copy Link</button>
+      <p v-if="linkCopied" style="color: green;">Link copied to clipboard!</p>
     </div>
   </div>
 </template>
 
 <script>
-import apiClient from '../api-client';
+import { useRouter } from "vue-router";
+import apiClient from "../api-client";
 
 export default {
-  name: "CreateRoom",
   data() {
     return {
-      roomName: "",
-      roomLink: null,
+      name: "",
+      roomId: null,
+      shareLink: "",
+      linkCopied: false,
     };
   },
   methods: {
     async createRoom() {
       try {
-        const response = await apiClient.post('/rooms', { name: this.roomName });
-        const roomId = response.data.room_id;
-        this.roomLink = `/rooms/${roomId}`;
+        const response = await apiClient.post("/rooms", { name: this.name });
+        this.roomId = response.data.room_id;
+
+        this.shareLink = `${window.location.origin}/rooms/${this.roomId}/join`;
+        this.linkCopied = false;
       } catch (error) {
-        console.error("Failed to create room:", error);
-        alert("An error occurred while creating the room.");
+        console.error("Error creating room:", error);
       }
+    },
+    copyLink() {
+      navigator.clipboard.writeText(this.shareLink).then(() => {
+        this.linkCopied = true;
+      });
     },
   },
 };
