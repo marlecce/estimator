@@ -1,13 +1,9 @@
 package models
 
-import (
-	"github.com/gorilla/websocket"
-)
+import socketio "github.com/googollee/go-socket.io"
 
 type Hub struct {
-	RoomID     string
-	Clients    map[*websocket.Conn]bool
-	Broadcast  chan []byte
-	Register   chan *websocket.Conn
-	Unregister chan *websocket.Conn
+	RoomID    string
+	Clients   map[string]socketio.Conn
+	Broadcast chan []byte
 }

@@ -1,19 +1,19 @@
 <template>
-    <div>
-      <h1>Join Room</h1>
-      <p>Enter your name to join the room.</p>
-      <input v-model="name" placeholder="Your Name" />
-      <button @click="joinRoom">Join</button>
-      <div v-if="participantId">
-        <p>You've joined the room! Your participant ID is {{ participantId }}.</p>
-      </div>
-      <div v-if="errorMessage" style="color: red;">
-        <p>{{ errorMessage }}</p>
-      </div>
+  <div>
+    <h1>Join Room</h1>
+    <p>Enter your name to join the room.</p>
+    <input v-model="name" placeholder="Your Name" />
+    <button @click="joinRoom">Join</button>
+    <div v-if="participantId">
+      <p>You've joined the room! Your participant ID is {{ participantId }}.</p>
+    </div>
+    <div v-if="errorMessage" style="color: red;">
+      <p>{{ errorMessage }}</p>
+    </div>
 
     <div v-if="participantId">
-        <p>You have successfully joined the room!</p>
-        <router-link :to="`/rooms/${roomId}`" class="btn btn-primary">Go to the Room</router-link>
+      <p>You have successfully joined the room!</p>
+      <router-link :to="`/rooms/${roomId}`" class="btn btn-primary">Go to the Room</router-link>
     </div>
   </div>
 </template>
@@ -28,6 +28,7 @@ export default {
       name: "",
       errorMessage: "",
       participantId: null,
+      ws: null, 
     };
   },
   computed: {
@@ -49,13 +50,18 @@ export default {
         });
 
         this.participantId = response.data.participant_id;
-
         this.errorMessage = '';
+
+        this.$router.push({ 
+          name: "room", 
+          params: { roomId }, 
+          query: { participantId: this.participantId } 
+        });
       } catch (error) {
         console.error("Error joining room:", error);
         this.errorMessage = "Failed to join the room.";
       }
-    },
+    }
   },
 };
 </script>

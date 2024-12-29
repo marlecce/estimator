@@ -99,3 +99,12 @@ func (s *RoomService) GetRoomDetails(roomID string) (*models.Room, error) {
 	}
 	return room, nil
 }
+
+func (s *RoomService) IsParticipantInRoom(room *models.Room, participantId string) bool {
+	for _, participant := range room.Participants {
+		if participant.ID == participantId {
+			return true
+		}
+	}
+	return false
+}

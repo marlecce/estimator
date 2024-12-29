@@ -21,6 +21,9 @@ func main() {
 	apiRouter := router.PathPrefix("/api").Subrouter()
 	api.RegisterRoomRoutes(apiRouter, roomService, hubService)
 
+	socketServer := services.InitSocketServer()
+	router.PathPrefix("/socket.io/").Handler(socketServer)
+
 	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./frontend/dist/"))))
 
 	handler := cors.Default().Handler(router)

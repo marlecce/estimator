@@ -1,31 +1,30 @@
-<script setup lang="ts">
-  defineProps<{ msg: string }>()
-</script>
 <template>
-    <div class="home">
-      <h1>Welcome to the Estimation App</h1>
-      <div class="actions">
-        <router-link to="/rooms/create">
-          <button>Create a Room</button>
-        </router-link>
-        <router-link to="/rooms/join">
-          <button>Join a Room</button>
-        </router-link>
-      </div>
-    </div>
+  <div>
+    <h1>Benvenuto nel sistema di stima</h1>
+    <button @click="goToCreateRoom">Crea una nuova stanza</button>
+    <input v-model="roomId" placeholder="Inserisci ID stanza" />
+    <button @click="joinRoom">Entra nella stanza</button>
+  </div>
 </template>
 
-<style scoped>
-.home {
-  text-align: center;
-  margin-top: 50px;
-}
-
-.actions button {
-  margin: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-}
-</style>
-  
+<script>
+export default {
+  data() {
+    return {
+      roomId: '',
+    };
+  },
+  methods: {
+    goToCreateRoom() {
+      this.$router.push({ name: 'create-room' });
+    },
+    joinRoom() {
+      if (this.roomId) {
+        this.$router.push({ name: 'join-room', params: { roomId: this.roomId } });
+      } else {
+        alert('Inserisci un ID stanza valido!');
+      }
+    }
+  }
+};
+</script>
