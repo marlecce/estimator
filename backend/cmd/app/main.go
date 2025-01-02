@@ -16,17 +16,21 @@ func main() {
 
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
-	hubService := services.NewHubService()
+
+	allowedOrigins := []string{"http://localhost:5173"}
+	wsServer := services.NewWebSocketServer(allowedOrigins)
+	router.HandleFunc("/ws", wsServer.HandleConnections)
+	go wsServer.HandleMessages()
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
-	api.RegisterRoomRoutes(apiRouter, roomService, hubService)
-
-	socketServer := services.InitSocketServer()
-	router.PathPrefix("/socket.io/").Handler(socketServer)
+	api.RegisterRoomRoutes(apiRouter, roomService, wsServer)
 
 	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("./frontend/dist/"))))
 
-	handler := cors.Default().Handler(router)
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowCredentials: true,
+	}).Handler(router)
 
 	port := "8181"
 

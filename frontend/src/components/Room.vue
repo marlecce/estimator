@@ -26,6 +26,8 @@
 import apiClient from '../api-client';
 import { io } from 'socket.io-client';
 
+localStorage.debug = 'socket.io-client:debug';
+
 export default {
   name: 'Room',
   data() {
@@ -52,34 +54,48 @@ export default {
         return;
       }
 
-      this.socket = io("http://localhost:8181", {
-        query: { participantId },
-      });
+      console.log('Connecting to WebSocket with participantId:', participantId);
 
-      this.socket.on('connect', () => {
+      this.socket = new WebSocket("ws://localhost:8181/ws");
+      
+      this.socket.onopen = () => {
         console.log('Connected to WebSocket');
-        this.socket.emit("join_room", { roomId: this.roomId, participantId });
-      });
+        // Quando connesso, invia un messaggio di join per il partecipante
+        this.socket.send(JSON.stringify({
+          type: 'join',
+          roomId: this.roomId,
+          participantId: participantId,
+        }));
+      };
 
-      this.socket.on('participant_joined', (newParticipant) => {
-        console.log("New participant joined the room:", newParticipant);
-        this.participants.push(newParticipant);
-      });
+      this.socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        console.log('Received WebSocket message:', message);
 
-      this.socket.on('participant_left', (participantId) => {
-        this.participants = this.participants.filter((p) => p.id !== participantId);
-      });
+        // Gestisci messaggi specifici
+        if (message.type === 'participant_joined') {
+          this.participants.push(message.participant);
+        } else if (message.type === 'participant_left') {
+          this.participants = this.participants.filter(p => p.id !== message.participantId);
+        } else if (message.type === 'estimate_notification') {
+          // Esegui azioni per la notifica di stima
+          console.log('Estimate notification:', message);
+        } else if (message.type === 'estimates_revealed') {
+          // Esegui azioni per la rivelazione delle stime
+          console.log('Estimates revealed:', message.estimates);
+        }
+      };
 
-      this.socket.on('roomStateUpdated', (updatedParticipants) => {
-        this.participants = updatedParticipants;
-      });
+      this.socket.onerror = (err) => {
+        console.error('WebSocket error:', err);
+      };
 
-      this.socket.on("disconnect", () => {
+      this.socket.onclose = () => {
         console.log("Disconnected from WebSocket");
-      });
+      };
     },
     copyLink() {
-      const link = `${window.location.origin}/rooms/${this.roomId}`;
+      const link = `${window.location.origin}/rooms/${this.roomId}/join`;
       navigator.clipboard.writeText(link).then(() => {
         this.linkCopied = true;
         setTimeout(() => (this.linkCopied = false), 2000);

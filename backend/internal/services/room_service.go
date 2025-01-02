@@ -30,6 +30,7 @@ func (s *RoomService) CreateRoom(name string, estimationType string) string {
 
 	room := &models.Room{
 		ID:             roomID,
+		HostID:         "", // TODO get the participant id that created the room
 		Name:           name,
 		Participants:   []*models.Participant{},
 		Estimates:      []*models.Estimate{},
@@ -100,7 +101,12 @@ func (s *RoomService) GetRoomDetails(roomID string) (*models.Room, error) {
 	return room, nil
 }
 
-func (s *RoomService) IsParticipantInRoom(room *models.Room, participantId string) bool {
+func (s *RoomService) IsParticipantInRoom(roomID string, participantId string) bool {
+	room, err := s.GetRoomDetails(roomID)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
 	for _, participant := range room.Participants {
 		if participant.ID == participantId {
 			return true

@@ -8,34 +8,29 @@ import (
 	requests "estimator-be/internal/models/requests"
 	"estimator-be/internal/services"
 
-	socketio "github.com/googollee/go-socket.io"
-
 	"github.com/gorilla/mux"
 )
 
-var roomSocketServers = make(map[string]*socketio.Server)
-
 type RoomHandler struct {
 	roomService *services.RoomService
-	hubService  *services.HubService
+	wsServer    *services.WebSocketServer
 }
 
-func NewRoomHandler(roomService *services.RoomService, hubService *services.HubService) *RoomHandler {
+func NewRoomHandler(roomService *services.RoomService, wsServer *services.WebSocketServer) *RoomHandler {
 	return &RoomHandler{
 		roomService: roomService,
-		hubService:  hubService,
+		wsServer:    wsServer,
 	}
 }
 
-func RegisterRoomRoutes(r *mux.Router, roomService *services.RoomService, hubService *services.HubService) {
-	handler := NewRoomHandler(roomService, hubService)
+func RegisterRoomRoutes(r *mux.Router, roomService *services.RoomService, wsServer *services.WebSocketServer) {
+	handler := NewRoomHandler(roomService, wsServer)
 
 	r.HandleFunc("/rooms", handler.CreateRoom).Methods("POST")
 	r.HandleFunc("/rooms/{room_id}/join", handler.JoinRoom).Methods("POST")
 	r.HandleFunc("/rooms/{room_id}/estimate", handler.Estimate).Methods("POST")
 	r.HandleFunc("/rooms/{room_id}/reveal", handler.Reveal).Methods("POST")
 	r.HandleFunc("/rooms/{room_id}", handler.GetRoomDetails).Methods("GET")
-	r.HandleFunc("/rooms/{room_id}/ws", handler.HandleWebSocket).Methods("GET")
 }
 
 func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +55,12 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	roomID := vars["room_id"]
 
 	// TODO check if room exists
+	/*
+		if !h.roomService.RoomExists(roomID) {
+			http.Error(w, "Room does not exist", http.StatusNotFound)
+			return
+		}
+	*/
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -72,48 +73,12 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	server, exists := roomSocketServers[roomID]
-	if !exists {
-		server = socketio.NewServer(nil)
-
-		// Configura gli eventi WebSocket
-		server.OnConnect("/", func(s socketio.Conn) error {
-			log.Printf("New connection in room %s", roomID)
-			s.Join(roomID)
-			return nil
-		})
-
-		server.OnEvent("/", "join_room", func(s socketio.Conn, data map[string]interface{}) {
-			participantID := data["participantId"].(string)
-			log.Printf("Participant %s joined room %s", participantID, roomID)
-			s.Emit("participant_joined", data)
-		})
-
-		server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-			log.Printf("Participant disconnected from room %s: %s", roomID, reason)
-			s.Leave(roomID)
-		})
-
-		go func() {
-			if err := server.Serve(); err != nil {
-				log.Fatalf("SocketIO server error: %s", err)
-			}
-		}()
-		roomSocketServers[roomID] = server
-	} else {
-		log.Printf("WebSocket server already exists for room %s", roomID)
-	}
-
-	// Invia un evento di aggiornamento della stanza
-	server.BroadcastToRoom("/", roomID, "participant_joined", map[string]interface{}{
-		"id":   participantID,
-		"name": req.Name,
-	})
-
-	// Risposta HTTP
 	resp := map[string]string{"participant_id": participantID}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("Failed to encode response: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }
 
 func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
@@ -132,16 +97,12 @@ func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hub, exists := h.hubService.GetHub(roomID)
-	if exists {
-		message := map[string]interface{}{
-			"type":        "estimate_notification",
-			"participant": req.ParticipantID,
-			"message":     "A participant has made an estimate.",
-		}
-		msg, _ := json.Marshal(message)
-		hub.Broadcast <- msg
-	}
+	msg, _ := json.Marshal(map[string]interface{}{
+		"type":        "estimate_notification",
+		"participant": req.ParticipantID,
+		"message":     "A participant has made an estimate.",
+	})
+	h.wsServer.SendBroadcast(msg)
 
 	resp := map[string]string{"status": "success"}
 	w.Header().Set("Content-Type", "application/json")
@@ -158,15 +119,11 @@ func (h *RoomHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hub, exists := h.hubService.GetHub(roomID)
-	if exists {
-		message := map[string]interface{}{
-			"type":      "estimates_revealed",
-			"estimates": estimates,
-		}
-		msg, _ := json.Marshal(message)
-		hub.Broadcast <- msg
-	}
+	msg, _ := json.Marshal(map[string]interface{}{
+		"type":      "estimates_revealed",
+		"estimates": estimates,
+	})
+	h.wsServer.SendBroadcast(msg)
 
 	resp := map[string]interface{}{"estimates": estimates}
 	w.Header().Set("Content-Type", "application/json")
@@ -191,17 +148,4 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
-}
-
-func (h *RoomHandler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	roomID := mux.Vars(r)["room_id"]
-	log.Printf("Starting websocket for room %s", roomID)
-
-	server, exists := roomSocketServers[roomID]
-	if !exists {
-		http.Error(w, "Room not found", http.StatusNotFound)
-		return
-	}
-
-	server.ServeHTTP(w, r)
 }

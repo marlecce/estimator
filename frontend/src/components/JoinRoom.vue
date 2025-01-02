@@ -52,6 +52,7 @@ export default {
         this.participantId = response.data.participant_id;
         this.errorMessage = '';
 
+        // Redirect to room page with the participantId in query params
         this.$router.push({ 
           name: "room", 
           params: { roomId }, 
