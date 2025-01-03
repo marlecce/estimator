@@ -41,16 +41,16 @@ func (s *RoomService) CreateRoom(name string, estimationType string) string {
 	return roomID
 }
 
-func (s *RoomService) AddParticipant(roomID, name string) (string, error) {
+func (s *RoomService) AddParticipant(roomID, name string) (*models.Participant, error) {
 	participantID := fmt.Sprintf("p-%06d", rand.Intn(1000000))
 	participant := &models.Participant{ID: participantID, Name: name}
 
 	err := s.repo.AddParticipant(roomID, participant)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return participantID, nil
+	return participant, nil
 }
 
 func (s *RoomService) AddEstimate(roomID, participantID string, value float64) error {

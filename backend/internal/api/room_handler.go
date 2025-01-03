@@ -67,13 +67,16 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participantID, err := h.roomService.AddParticipant(roomID, req.Name)
+	participant, err := h.roomService.AddParticipant(roomID, req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	resp := map[string]string{"participant_id": participantID}
+	resp := map[string]interface{}{
+		"participant": participant,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		log.Printf("Failed to encode response: %s", err)
@@ -143,6 +146,7 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]interface{}{
 		"name":            roomDetails.Name,
 		"participants":    roomDetails.Participants,
+		"hostId":          roomDetails.HostID,
 		"revealed":        roomDetails.Revealed,
 		"estimation_type": roomDetails.EstimationType,
 	}
