@@ -56,7 +56,7 @@ export default {
         this.$router.push({ 
           name: "room", 
           params: { roomId }, 
-          query: { id: participant.id, name: participant.name }, 
+          query: { participantId: participant.id, participantName: participant.name }, 
         });
       } catch (error) {
         console.error("Error joining room:", error);

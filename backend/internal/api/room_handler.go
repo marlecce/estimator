@@ -41,9 +41,13 @@ func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roomID := h.roomService.CreateRoom(req.Name, req.EstimationType)
+	roomID, host, _ := h.roomService.CreateRoom(req.Name, req.HostName, req.EstimationType)
 
-	resp := map[string]string{"room_id": roomID}
+	resp := map[string]interface{}{
+		"room_id": roomID,
+		"host":    host,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
@@ -67,7 +71,8 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := h.roomService.AddParticipant(roomID, req.Name)
+	isHost := false
+	participant, err := h.roomService.AddParticipant(roomID, req.Name, isHost)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

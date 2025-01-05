@@ -17,7 +17,7 @@ func NewRoomService(repo *repositories.RoomRepository) *RoomService {
 	return &RoomService{repo: repo}
 }
 
-func (s *RoomService) CreateRoom(name string, estimationType string) string {
+func (s *RoomService) CreateRoom(name string, hostName string, estimationType string) (string, *models.Participant, error) {
 	var validType models.EstimationType
 	switch estimationType {
 	case string(models.EstimationHours), string(models.EstimationDays), string(models.EstimationStoryPoints):
@@ -30,7 +30,7 @@ func (s *RoomService) CreateRoom(name string, estimationType string) string {
 
 	room := &models.Room{
 		ID:             roomID,
-		HostID:         "", // TODO get the participant id that created the room
+		HostID:         "",
 		Name:           name,
 		Participants:   []*models.Participant{},
 		Estimates:      []*models.Estimate{},
@@ -38,14 +38,20 @@ func (s *RoomService) CreateRoom(name string, estimationType string) string {
 	}
 	s.repo.Save(room)
 
-	return roomID
+	isHost := true
+	host, err := s.AddParticipant(roomID, hostName, isHost)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to add host participant: %w", err)
+	}
+
+	return roomID, host, nil
 }
 
-func (s *RoomService) AddParticipant(roomID, name string) (*models.Participant, error) {
+func (s *RoomService) AddParticipant(roomID, name string, isHost bool) (*models.Participant, error) {
 	participantID := fmt.Sprintf("p-%06d", rand.Intn(1000000))
 	participant := &models.Participant{ID: participantID, Name: name}
 
-	err := s.repo.AddParticipant(roomID, participant)
+	err := s.repo.AddParticipant(roomID, participant, isHost)
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@
           </div>
           <p class="mt-2 text-lg font-medium">{{ participant.name }}</p>
           <button
-            v-if="participant.id !== hostId"
+            v-if="!isHost(participant.id)"
             @click="sendEstimate(participant.id)"
             class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 disabled:bg-gray-400"
             :disabled="participant.hasEstimated"
@@ -37,7 +37,7 @@
 
     <!-- Host Actions -->
     <footer class="mt-10 w-full bg-gray-100 py-6 flex flex-col items-center">
-      <div v-if="currentUserId === hostId" class="flex gap-4">
+      <div v-if="isHost(currentParticipantId)" class="flex gap-4">
         <button
           @click="revealEstimates"
           class="px-5 py-3 bg-yellow-500 text-sm font-semibold text-white rounded-lg shadow hover:bg-yellow-600"
@@ -67,7 +67,7 @@ export default {
       roomName: "",
       participants: [],
       hostId: null,
-      currentUserId: this.$route.query.id,
+      currentParticipantId: this.$route.query.participantId, 
       linkCopied: false,
       socket: null,
     };
@@ -79,33 +79,60 @@ export default {
         this.roomName = response.data.name;
         this.participants = response.data.participants || [];
         this.hostId = response.data.hostId;
+
       } catch (error) {
         console.error("Failed to load room details:", error);
       }
     },
+    isHost(participantId) {
+      return participantId === this.hostId;
+    },
     setupWebSocket() {
+      let userId = null;  
+      let isJoined = false; 
+
       this.socket = new WebSocket("ws://localhost:8181/ws");
       this.socket.onopen = () => {
-        this.socket.send(
-          JSON.stringify({
-            type: "participant_joined",
-            roomId: this.roomId,
-            participantId: this.currentUserId,
-          })
-        );
+        console.log("WebSocket connection opened");
+
+        const setupMessage = {
+            type: 'setup_connection',
+            participantId: this.currentParticipantId
+        };
+
+        this.socket.send(JSON.stringify(setupMessage));
       };
 
       this.socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
-        if (
-          message.type === "participant_joined" ||
-          message.type === "participant_left" ||
-          message.type === "estimate_submitted" ||
-          message.type === "estimates_revealed"
-        ) {
-          this.fetchRoomDetails();
+
+        if (message.type === "user_id_assigned") {
+          this.userId = message.userId;
+          console.log("Received user ID:", this.userId);
+
+          if (!isJoined && this.userId) {
+            this.socket.send(
+              JSON.stringify({
+                type: "participant_joined",
+                roomId: this.roomId,
+                participantId: userId, 
+              })
+            );
+            isJoined = true; 
+          }
+      } else {
+        switch (message.type) {
+          case "participant_joined":
+          case "participant_left":
+          case "estimate_submitted":
+          case "estimates_revealed":
+            this.fetchRoomDetails();
+            break;
+          default:
+            console.log("Unknown message type:", message.type);
         }
-      };
+      }
+    };
 
       this.socket.onerror = (err) => {
         console.error("WebSocket error:", err);

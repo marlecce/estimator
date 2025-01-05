@@ -40,7 +40,7 @@ func (r *RoomRepository) FindAll() []*models.Room {
 	return rooms
 }
 
-func (r *RoomRepository) AddParticipant(roomID string, participant *models.Participant) error {
+func (r *RoomRepository) AddParticipant(roomID string, participant *models.Participant, isHost bool) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -50,6 +50,11 @@ func (r *RoomRepository) AddParticipant(roomID string, participant *models.Parti
 	}
 
 	room.Participants = append(room.Participants, participant)
+
+	if isHost {
+		room.HostID = participant.ID
+	}
+
 	return nil
 }
 
