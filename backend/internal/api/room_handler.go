@@ -2,9 +2,11 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
+	"estimator-be/internal/api/validators"
 	requests "estimator-be/internal/models/requests"
 	"estimator-be/internal/services"
 
@@ -94,19 +96,28 @@ func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roomID := vars["room_id"]
 
+	fmt.Print(r.Body)
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
-	err := h.roomService.AddEstimate(roomID, req.ParticipantID, req.Value)
+	fmt.Print(req)
+
+	if err := validators.ValidateEstimateRequest(req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := h.roomService.AddEstimate(roomID, req.ParticipantID, req.Value, req.EstimationType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	msg, _ := json.Marshal(map[string]interface{}{
-		"type":        "estimate_notification",
+		"type":        "estimate_submitted",
 		"participant": req.ParticipantID,
 		"message":     "A participant has made an estimate.",
 	})
@@ -149,11 +160,11 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]interface{}{
-		"name":            roomDetails.Name,
-		"participants":    roomDetails.Participants,
-		"hostId":          roomDetails.HostID,
-		"revealed":        roomDetails.Revealed,
-		"estimation_type": roomDetails.EstimationType,
+		"name":           roomDetails.Name,
+		"participants":   roomDetails.Participants,
+		"hostId":         roomDetails.HostID,
+		"revealed":       roomDetails.Revealed,
+		"estimationType": roomDetails.EstimationType,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)

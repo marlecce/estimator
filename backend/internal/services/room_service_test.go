@@ -14,7 +14,7 @@ func TestRoomService_CreateRoom(t *testing.T) {
 	roomName := "Test Room"
 	hostName := "John"
 	estimationType := "hours"
-	roomID, _ := service.CreateRoom(roomName, hostName, estimationType)
+	roomID, _, _ := service.CreateRoom(roomName, hostName, estimationType)
 
 	// Verify that the room was created and stored
 	savedRoom, exists := repo.FindByID(roomID)
@@ -39,7 +39,7 @@ func TestRoomService_CreateRoomWithInvalidEstimationType(t *testing.T) {
 	roomName := "Test Room"
 	hostName := "John"
 	estimationType := "hours"
-	roomID, _ := service.CreateRoom(roomName, hostName, estimationType)
+	roomID, _, _ := service.CreateRoom(roomName, hostName, estimationType)
 
 	// Verify that the room was created and stored
 	savedRoom, exists := repo.FindByID(roomID)

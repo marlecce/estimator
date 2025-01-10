@@ -23,7 +23,7 @@ func (s *RoomService) CreateRoom(name string, hostName string, estimationType st
 	case string(models.EstimationHours), string(models.EstimationDays), string(models.EstimationStoryPoints):
 		validType = models.EstimationType(estimationType)
 	default:
-		validType = models.EstimationStoryPoints
+		validType = models.EstimationHours
 	}
 
 	roomID := uuid.New().String()
@@ -59,7 +59,7 @@ func (s *RoomService) AddParticipant(roomID, name string, isHost bool) (*models.
 	return participant, nil
 }
 
-func (s *RoomService) AddEstimate(roomID, participantID string, value float64) error {
+func (s *RoomService) AddEstimate(roomID, participantID string, value float64, estimationType models.EstimationType) error {
 	room, roomExist := s.repo.FindByID(roomID)
 	if !roomExist {
 		return fmt.Errorf("room not found: %s", roomID)
@@ -69,6 +69,10 @@ func (s *RoomService) AddEstimate(roomID, participantID string, value float64) e
 		return fmt.Errorf("cannot add estimate, room estimates already revealed")
 	}
 
+	if room.EstimationType != estimationType {
+		return fmt.Errorf("mismatched estimation type: expected %s, got %s", room.EstimationType, estimationType)
+	}
+
 	for _, estimate := range room.Estimates {
 		if estimate.ParticipantID == participantID {
 			return fmt.Errorf("participant has already estimated")
@@ -76,8 +80,9 @@ func (s *RoomService) AddEstimate(roomID, participantID string, value float64) e
 	}
 
 	room.Estimates = append(room.Estimates, &models.Estimate{
-		ParticipantID: participantID,
-		Value:         value,
+		ParticipantID:  participantID,
+		Value:          value,
+		EstimationType: estimationType,
 	})
 
 	s.repo.Save(room)

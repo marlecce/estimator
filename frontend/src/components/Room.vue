@@ -5,6 +5,10 @@
       <h1 class="text-center text-3xl font-bold text-white">
         Room: <span class="text-blue-300">{{ roomName }}</span>
       </h1>
+      <p class="text-center text-lg text-blue-100 mt-2">
+        Estimation Type:
+        <span class="font-semibold text-yellow-300">{{ estimationTypeLabel }}</span>
+      </p>
     </header>
 
     <!-- Participants Section -->
@@ -23,11 +27,13 @@
             {{ participant.name.charAt(0).toUpperCase() }}
           </div>
           <p class="mt-2 text-lg font-medium">{{ participant.name }}</p>
+          <p v-if="participant.hasEstimated" class="mt-2 text-sm text-green-600 font-semibold">
+            Estimated
+          </p>
           <button
-            v-if="!isHost(participant.id)"
-            @click="sendEstimate(participant.id)"
-            class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700 disabled:bg-gray-400"
-            :disabled="participant.hasEstimated"
+            v-else-if="!isHost(participant.id)"
+            @click="openEstimateDialog(participant.id)"
+            class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700"
           >
             Submit Estimate
           </button>
@@ -54,6 +60,38 @@
       <p v-if="linkCopied" class="mt-3 text-sm text-green-600 font-medium">Room link copied!</p>
     </footer>
   </div>
+
+  <!-- Dialog per la stima -->
+  <div v-if="showEstimateDialog" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96">
+      <h2 class="text-xl font-semibold text-blue-700 mb-4">
+        Submit Estimate ({{ estimationTypeLabel }})
+      </h2>
+      <div class="mb-4">
+        <label for="estimateValue" class="block text-sm font-medium text-gray-700">Value</label>
+        <input
+          id="estimateValue"
+          v-model.number="estimateValue"
+          type="number"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+        />
+      </div>
+      <div class="flex justify-end gap-4">
+        <button
+          @click="sendEstimate()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Submit
+        </button>
+        <button
+          @click="closeEstimateDialog"
+          class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -65,18 +103,38 @@ export default {
     return {
       roomId: this.$route.params.roomId,
       roomName: "",
+      estimationType: "",
       participants: [],
       hostId: null,
       currentParticipantId: this.$route.query.participantId, 
       linkCopied: false,
       socket: null,
+      showEstimateDialog: false, 
+      estimateValue: null, 
+      selectedParticipantId: null,
     };
+  },
+  computed: {
+    estimationTypeLabel() {
+      switch (this.estimationType) {
+        case "hours":
+          return "Hours";
+        case "days":
+          return "Days";
+        case "story_points":
+          return "Story Points";
+        default:
+          return "Unknown";
+      }
+    },
   },
   methods: {
     async fetchRoomDetails() {
       try {
         const response = await apiClient.get(`/rooms/${this.roomId}`);
+        console.log(response.data)
         this.roomName = response.data.name;
+        this.estimationType = response.data.estimationType;
         this.participants = response.data.participants || [];
         this.hostId = response.data.hostId;
 
@@ -125,8 +183,13 @@ export default {
           case "participant_joined":
           case "participant_left":
           case "estimate_submitted":
-          case "estimates_revealed":
             this.fetchRoomDetails();
+            break;
+          case "estimates_revealed":
+            const participant = this.participants.find(p => p.id === message.participantId);
+            if (participant) {
+              participant.hasEstimated = true;
+            }
             break;
           default:
             console.log("Unknown message type:", message.type);
@@ -142,14 +205,48 @@ export default {
         console.log("Disconnected from WebSocket");
       };
     },
-    sendEstimate(participantId) {
-      this.socket.send(
-        JSON.stringify({
-          type: "estimate_submitted",
-          roomId: this.roomId,
-          participantId,
-        })
-      );
+    openEstimateDialog(participantId) {
+      this.selectedParticipantId = participantId;
+      this.estimateValue = null;
+      this.showEstimateDialog = true;
+    },
+    closeEstimateDialog() {
+      this.selectedParticipantId = null;
+      this.estimateValue = null;
+      this.showEstimateDialog = false;
+    },
+    async sendEstimate() {
+      
+      if (!this.estimateValue || this.estimateValue <= 0) {
+        alert("Please enter a valid estimate value.");
+        return;
+      }
+
+      const participantId = this.selectedParticipantId;
+
+      if (!participantId || !this.estimationType) {
+        console.error("Participant ID or Estimation Type is missing.");
+        return;
+      }
+
+      try {
+        await apiClient.post(`/rooms/${this.roomId}/estimate`, {
+          participant_id: participantId,
+          Value: this.estimateValue,
+          estimation_type: this.estimationType,
+        });
+
+        const participant = this.participants.find(
+          (p) => p.id === participantId
+        );
+        if (participant) {
+          participant.hasEstimated = true;
+        }
+
+        this.closeEstimateDialog();
+      } catch (error) {
+        console.error("Failed to submit estimate:", error);
+      }
     },
     revealEstimates() {
       this.socket.send(
@@ -189,5 +286,33 @@ export default {
 }
 .participant-card:hover {
   transform: translateY(-5px);
+}
+header p {
+  font-size: 1.125rem;
+  margin-top: 0.5rem;
+}
+.text-green-600 {
+  color: #16a34a;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.fixed {
+  position: fixed;
+}
+.inset-0 {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.bg-gray-900 {
+  background-color: rgba(17, 24, 39, 0.9);
+}
+.opacity-50 {
+  opacity: 0.5;
+}
+.z-50 {
+  z-index: 50;
 }
 </style>
