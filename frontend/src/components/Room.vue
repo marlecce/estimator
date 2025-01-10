@@ -34,6 +34,7 @@
             v-else-if="!isHost(participant.id)"
             @click="openEstimateDialog(participant.id)"
             class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700"
+            :disabled="participant.hasEstimated"
           >
             Submit Estimate
           </button>
@@ -182,10 +183,10 @@ export default {
         switch (message.type) {
           case "participant_joined":
           case "participant_left":
-          case "estimate_submitted":
+          case "estimates_revealed":
             this.fetchRoomDetails();
             break;
-          case "estimates_revealed":
+          case "estimate_submitted":
             const participant = this.participants.find(p => p.id === message.participantId);
             if (participant) {
               participant.hasEstimated = true;
@@ -314,5 +315,9 @@ header p {
 }
 .z-50 {
   z-index: 50;
+}
+button:disabled {
+  background-color: #d1d5db; /* Gray-400 */
+  cursor: not-allowed;
 }
 </style>
