@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -96,14 +95,10 @@ func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roomID := vars["room_id"]
 
-	fmt.Print(r.Body)
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Print(req)
 
 	if err := validators.ValidateEstimateRequest(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -131,6 +126,8 @@ func (h *RoomHandler) Estimate(w http.ResponseWriter, r *http.Request) {
 func (h *RoomHandler) Reveal(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roomID := vars["room_id"]
+
+	// TODO check if participant sent in the request is the room's host
 
 	estimates, err := h.roomService.RevealEstimates(roomID)
 	if err != nil {
@@ -165,6 +162,7 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 		"hostId":         roomDetails.HostID,
 		"revealed":       roomDetails.Revealed,
 		"estimationType": roomDetails.EstimationType,
+		"estimates":      roomDetails.Estimates,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)

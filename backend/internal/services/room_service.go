@@ -85,6 +85,13 @@ func (s *RoomService) AddEstimate(roomID, participantID string, value float64, e
 		EstimationType: estimationType,
 	})
 
+	for _, participant := range room.Participants {
+		if participant.ID == participantID {
+			participant.HasEstimated = true
+			break
+		}
+	}
+
 	s.repo.Save(room)
 
 	return nil
@@ -109,6 +116,7 @@ func (s *RoomService) GetRoomDetails(roomID string) (*models.Room, error) {
 	if !exists {
 		return nil, fmt.Errorf("room with ID %s not found", roomID)
 	}
+
 	return room, nil
 }
 

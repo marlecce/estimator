@@ -11,6 +11,10 @@
       </p>
     </header>
 
+    <div v-if="revealed" class="mt-6 p-4 bg-green-100 text-green-800 rounded-lg shadow">
+      <p class="text-lg font-semibold">Estimates have been revealed!</p>
+    </div>
+
     <!-- Participants Section -->
     <main class="flex flex-col items-center w-full max-w-5xl p-6">
       <h2 class="text-xl font-semibold mb-4 text-blue-700">Participants</h2>
@@ -27,7 +31,10 @@
             {{ participant.name.charAt(0).toUpperCase() }}
           </div>
           <p class="mt-2 text-lg font-medium">{{ participant.name }}</p>
-          <p v-if="participant.hasEstimated" class="mt-2 text-sm text-green-600 font-semibold">
+          <p v-if="revealed && participant.revealedEstimate !== null" class="mt-2 text-lg font-semibold text-yellow-600">
+            Estimate: {{ participant.revealedEstimate }}
+          </p>
+          <p v-else-if="participant.hasEstimated && !revealed" class="mt-2 text-sm text-green-600 font-semibold">
             Estimated
           </p>
           <button
@@ -44,7 +51,7 @@
 
     <!-- Host Actions -->
     <footer class="mt-10 w-full bg-gray-100 py-6 flex flex-col items-center">
-      <div v-if="isHost(currentParticipantId)" class="flex gap-4">
+      <div v-if="isHost(currentParticipantId) && !revealed" class="flex gap-4">
         <button
           @click="revealEstimates"
           class="px-5 py-3 bg-yellow-500 text-sm font-semibold text-white rounded-lg shadow hover:bg-yellow-600"
@@ -62,7 +69,7 @@
     </footer>
   </div>
 
-  <!-- Dialog per la stima -->
+  <!-- Dialog for the estimation -->
   <div v-if="showEstimateDialog" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 w-96">
       <h2 class="text-xl font-semibold text-blue-700 mb-4">
@@ -113,6 +120,7 @@ export default {
       showEstimateDialog: false, 
       estimateValue: null, 
       selectedParticipantId: null,
+      revealed: false
     };
   },
   computed: {
@@ -133,11 +141,25 @@ export default {
     async fetchRoomDetails() {
       try {
         const response = await apiClient.get(`/rooms/${this.roomId}`);
-        console.log(response.data)
         this.roomName = response.data.name;
         this.estimationType = response.data.estimationType;
-        this.participants = response.data.participants || [];
         this.hostId = response.data.hostId;
+        this.revealed = response.data.revealed
+
+        const estimates = response.data.estimates || [];
+        console.log("stime:", estimates)
+        this.participants = (response.data.participants || []).map((participant) => {
+          const estimate = estimates.find(
+            (e) => e.participant_id === participant.id
+          );
+          return {
+            ...participant,
+            revealedEstimate: estimate ? estimate.value : null,
+          };
+        });
+
+        console.log(response.data)
+        console.log(this.participants)
 
       } catch (error) {
         console.error("Failed to load room details:", error);
@@ -165,37 +187,32 @@ export default {
       this.socket.onmessage = (event) => {
         const message = JSON.parse(event.data);
 
-        if (message.type === "user_id_assigned") {
-          this.userId = message.userId;
-          console.log("Received user ID:", this.userId);
-
-          if (!isJoined && this.userId) {
-            this.socket.send(
-              JSON.stringify({
-                type: "participant_joined",
-                roomId: this.roomId,
-                participantId: userId, 
-              })
-            );
-            isJoined = true; 
-          }
-      } else {
         switch (message.type) {
+          case "user_id_assigned":
+            this.userId = message.userId;
+            console.log("Received user ID:", this.userId);
+
+            if (!isJoined && this.userId) {
+              this.socket.send(
+                JSON.stringify({
+                  type: "participant_joined",
+                  roomId: this.roomId,
+                  participantId: userId, 
+                })
+              );
+              isJoined = true; 
+            }
+            break;
           case "participant_joined":
           case "participant_left":
+          case "estimate_submitted":
           case "estimates_revealed":
             this.fetchRoomDetails();
             break;
-          case "estimate_submitted":
-            const participant = this.participants.find(p => p.id === message.participantId);
-            if (participant) {
-              participant.hasEstimated = true;
-            }
-            break;
+         
           default:
             console.log("Unknown message type:", message.type);
         }
-      }
     };
 
       this.socket.onerror = (err) => {
@@ -249,13 +266,14 @@ export default {
         console.error("Failed to submit estimate:", error);
       }
     },
-    revealEstimates() {
-      this.socket.send(
-        JSON.stringify({
-          type: "reveal_estimates",
-          roomId: this.roomId,
-        })
-      );
+    async revealEstimates() {
+      try {
+        await apiClient.post(`/rooms/${this.roomId}/reveal`, {
+          participant_id: this.currentParticipantId
+        });
+      } catch (error) {
+        console.error("Failed to reveal the estimations:", error);
+      }
     },
     copyLink() {
       const link = `${window.location.origin}/rooms/${this.roomId}/join`;
@@ -319,5 +337,11 @@ header p {
 button:disabled {
   background-color: #d1d5db; /* Gray-400 */
   cursor: not-allowed;
+}
+.text-green-800 {
+  color: #065f46;
+}
+.bg-green-100 {
+  background-color: #d1fae5;
 }
 </style>

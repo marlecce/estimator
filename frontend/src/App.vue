@@ -13,7 +13,7 @@
         <!-- Navigation -->
         <nav class="hidden md:flex space-x-4">
           <a
-            href="#"
+            href="/"
             class="text-white hover:underline"
           >
             Home
