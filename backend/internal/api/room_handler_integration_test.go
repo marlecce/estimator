@@ -18,10 +18,12 @@ func TestCreateRoomIntegration(t *testing.T) {
 	// Arrange
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
-	hubService := services.NewHubService()
+
+	allowedOrigins := []string{"http://localhost:5173"}
+	wsService := services.NewWebSocketServer(allowedOrigins)
 
 	router := mux.NewRouter()
-	RegisterRoomRoutes(router, roomService, hubService)
+	RegisterRoomRoutes(router, roomService, wsService)
 
 	payload := map[string]string{"name": "Test Room"}
 	body, _ := json.Marshal(payload)
@@ -46,10 +48,12 @@ func TestAddParticipantIntegration(t *testing.T) {
 	// Arrange
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
-	hubService := services.NewHubService()
+
+	allowedOrigins := []string{"http://localhost:5173"}
+	wsService := services.NewWebSocketServer(allowedOrigins)
 
 	router := mux.NewRouter()
-	RegisterRoomRoutes(router, roomService, hubService)
+	RegisterRoomRoutes(router, roomService, wsService)
 
 	// Create a room
 	roomPayload := map[string]string{"name": "Test Room"}

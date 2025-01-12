@@ -1,0 +1,85 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-backend:
+    name: Build and Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.4
+
+      - name: Install Dependencies
+        run: cd backend && go mod tidy
+
+      - name: Run Tests
+        run: cd backend && go test ./...
+
+      - name: Build Backend
+        run: make backend
+
+  build-frontend:
+    name: Build and Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23
+
+      - name: Install Frontend Dependencies
+        run: make install-frontend
+
+      #- name: Run Frontend Tests
+      #  run: cd frontend && npm test
+
+      - name: Build Frontend
+        run: make frontend
+
+#  e2e-tests:
+#    name: Run End-to-End Tests
+#    runs-on: ubuntu-latest
+#    needs: [build-backend, build-frontend]
+#    steps:
+#      - name: Checkout Code
+#        uses: actions/checkout@v4
+#
+#      - name: Set up Node.js
+#        uses: actions/setup-node@v3
+#        with:
+#          node-version: 18
+#
+#      - name: Run E2E Tests
+#        run: |
+#          cd frontend
+#          npm run e2e # Aggiungi uno script e2e nel tuo package.json
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [build-backend, build-frontend]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy Backend
+        run: echo "Deploying Backend..." 
+
+      - name: Deploy Frontend
+        run: echo "Deploying Frontend..."
