@@ -7,6 +7,7 @@ import (
 
 	"estimator-be/internal/api/validators"
 	requests "estimator-be/internal/models/requests"
+	responses "estimator-be/internal/models/responses"
 	"estimator-be/internal/services"
 
 	"github.com/gorilla/mux"
@@ -44,9 +45,9 @@ func (h *RoomHandler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 
 	roomID, host, _ := h.roomService.CreateRoom(req.Name, req.HostName, req.EstimationType)
 
-	resp := map[string]interface{}{
-		"room_id": roomID,
-		"host":    host,
+	resp := responses.CreatedRoomResponse{
+		RoomID: roomID,
+		Host:   *host,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -79,9 +80,7 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
-		"participant": participant,
-	}
+	resp := participant
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {

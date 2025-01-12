@@ -3,6 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"estimator-be/internal/models"
+	requests "estimator-be/internal/models/requests"
+	responses "estimator-be/internal/models/responses"
 	"estimator-be/internal/repositories"
 	"estimator-be/internal/services"
 	"fmt"
@@ -25,7 +28,11 @@ func TestCreateRoomIntegration(t *testing.T) {
 	router := mux.NewRouter()
 	RegisterRoomRoutes(router, roomService, wsService)
 
-	payload := map[string]string{"name": "Test Room"}
+	payload := requests.CreateRoomRequest{
+		Name:           "Test Room",
+		HostName:       "John Doe",
+		EstimationType: "Hours",
+	}
 	body, _ := json.Marshal(payload)
 
 	req, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(body))
@@ -38,13 +45,15 @@ func TestCreateRoomIntegration(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusCreated, rr.Code)
 
-	var response map[string]string
+	var response responses.CreatedRoomResponse
 	err := json.Unmarshal(rr.Body.Bytes(), &response)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, response["room_id"])
+	assert.NotEmpty(t, response.RoomID)
+	assert.NotEmpty(t, response.Host.ID)
+	assert.NotEmpty(t, response.Host.Name)
 }
 
-func TestAddParticipantIntegration(t *testing.T) {
+func TestJoinRoomIntegration(t *testing.T) {
 	// Arrange
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
@@ -56,7 +65,11 @@ func TestAddParticipantIntegration(t *testing.T) {
 	RegisterRoomRoutes(router, roomService, wsService)
 
 	// Create a room
-	roomPayload := map[string]string{"name": "Test Room"}
+	roomPayload := requests.CreateRoomRequest{
+		Name:           "Test Room2",
+		HostName:       "John Doe2",
+		EstimationType: "Hours",
+	}
 	roomBody, _ := json.Marshal(roomPayload)
 	roomReq, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(roomBody))
 	roomReq.Header.Set("Content-Type", "application/json")
@@ -65,13 +78,15 @@ func TestAddParticipantIntegration(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, roomResp.Code)
 
-	var roomResponse map[string]string
+	var roomResponse responses.CreatedRoomResponse
 	err := json.Unmarshal(roomResp.Body.Bytes(), &roomResponse)
 	assert.NoError(t, err)
-	roomID := roomResponse["room_id"]
+	roomID := roomResponse.RoomID
 
-	// Add a partecipant
-	participantPayload := map[string]string{"name": "John Doe"}
+	// Add a participant
+	participantPayload := requests.JoinRoomRequest{
+		Name: "John Doe",
+	}
 	participantBody, _ := json.Marshal(participantPayload)
 	participantReq, _ := http.NewRequest("POST", fmt.Sprintf("/rooms/%s/join", roomID), bytes.NewReader(participantBody))
 	participantReq.Header.Set("Content-Type", "application/json")
@@ -81,8 +96,8 @@ func TestAddParticipantIntegration(t *testing.T) {
 	// Assert
 	assert.Equal(t, http.StatusOK, participantResp.Code)
 
-	var participantResponse map[string]string
+	var participantResponse models.Participant
 	err = json.Unmarshal(participantResp.Body.Bytes(), &participantResponse)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, participantResponse["participant_id"])
+	assert.NotEmpty(t, participantResponse.ID)
 }

@@ -85,7 +85,7 @@ export default {
           name: this.name,
         });
 
-        const { participant } = response.data;
+        const participant = response.data;
         this.participantId = participant.id;
         this.errorMessage = "";
 
