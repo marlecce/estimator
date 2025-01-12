@@ -155,14 +155,6 @@ func (h *RoomHandler) GetRoomDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := map[string]interface{}{
-		"name":           roomDetails.Name,
-		"participants":   roomDetails.Participants,
-		"hostId":         roomDetails.HostID,
-		"revealed":       roomDetails.Revealed,
-		"estimationType": roomDetails.EstimationType,
-		"estimates":      roomDetails.Estimates,
-	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(roomDetails)
 }

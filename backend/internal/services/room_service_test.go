@@ -13,7 +13,7 @@ func TestRoomService_CreateRoom(t *testing.T) {
 	// Create a new room
 	roomName := "Test Room"
 	hostName := "John"
-	estimationType := "hours"
+	estimationType := models.EstimationHours
 	roomID, _, _ := service.CreateRoom(roomName, hostName, estimationType)
 
 	// Verify that the room was created and stored
@@ -38,7 +38,7 @@ func TestRoomService_CreateRoomWithInvalidEstimationType(t *testing.T) {
 	// Create a new room
 	roomName := "Test Room"
 	hostName := "John"
-	estimationType := "hours"
+	estimationType := models.EstimationHours
 	roomID, _, _ := service.CreateRoom(roomName, hostName, estimationType)
 
 	// Verify that the room was created and stored

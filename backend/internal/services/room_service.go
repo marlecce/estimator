@@ -1,6 +1,7 @@
 package services
 
 import (
+	"estimator-be/internal/api/validators"
 	"estimator-be/internal/models"
 	"estimator-be/internal/repositories"
 	"fmt"
@@ -17,13 +18,10 @@ func NewRoomService(repo *repositories.RoomRepository) *RoomService {
 	return &RoomService{repo: repo}
 }
 
-func (s *RoomService) CreateRoom(name string, hostName string, estimationType string) (string, *models.Participant, error) {
-	var validType models.EstimationType
-	switch estimationType {
-	case string(models.EstimationHours), string(models.EstimationDays), string(models.EstimationStoryPoints):
-		validType = models.EstimationType(estimationType)
-	default:
-		validType = models.EstimationHours
+func (s *RoomService) CreateRoom(name string, hostName string, estimationType models.EstimationType) (string, *models.Participant, error) {
+
+	if !validators.IsValidEstimationType(estimationType) {
+		return "", nil, fmt.Errorf("invalid estimation type: %s", estimationType)
 	}
 
 	roomID := uuid.New().String()
@@ -34,7 +32,7 @@ func (s *RoomService) CreateRoom(name string, hostName string, estimationType st
 		Name:           name,
 		Participants:   []*models.Participant{},
 		Estimates:      []*models.Estimate{},
-		EstimationType: validType,
+		EstimationType: estimationType,
 	}
 	s.repo.Save(room)
 

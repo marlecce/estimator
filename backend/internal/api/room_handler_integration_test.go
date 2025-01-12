@@ -31,7 +31,7 @@ func TestCreateRoomIntegration(t *testing.T) {
 	payload := requests.CreateRoomRequest{
 		Name:           "Test Room",
 		HostName:       "John Doe",
-		EstimationType: "Hours",
+		EstimationType: models.EstimationHours,
 	}
 	body, _ := json.Marshal(payload)
 
@@ -68,7 +68,7 @@ func TestJoinRoomIntegration(t *testing.T) {
 	roomPayload := requests.CreateRoomRequest{
 		Name:           "Test Room2",
 		HostName:       "John Doe2",
-		EstimationType: "Hours",
+		EstimationType: models.EstimationStoryPoints,
 	}
 	roomBody, _ := json.Marshal(roomPayload)
 	roomReq, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(roomBody))
@@ -100,4 +100,63 @@ func TestJoinRoomIntegration(t *testing.T) {
 	err = json.Unmarshal(participantResp.Body.Bytes(), &participantResponse)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, participantResponse.ID)
+}
+
+func TestGetRoomDetails(t *testing.T) {
+	t.Run("should return room details for valid room ID", func(t *testing.T) {
+		// Arrange
+		roomRepo := repositories.NewRoomRepository()
+		roomService := services.NewRoomService(roomRepo)
+
+		allowedOrigins := []string{"http://localhost:5173"}
+		wsService := services.NewWebSocketServer(allowedOrigins)
+
+		router := mux.NewRouter()
+		RegisterRoomRoutes(router, roomService, wsService)
+
+		roomName := "Test"
+		hostName := "John Doe"
+		estimationType := models.EstimationHours
+		roomId, host, _ := roomService.CreateRoom(roomName, hostName, estimationType)
+
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/rooms/%s", roomId), nil)
+
+		// Act
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		// Assert
+		assert.Equal(t, http.StatusOK, rr.Code)
+
+		var response models.Room
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, roomId, response.ID)
+		assert.Equal(t, roomName, response.Name)
+		assert.Equal(t, host, response.Participants[0])
+	})
+
+	t.Run("should return 400 if room does not exist", func(t *testing.T) {
+		// Arrange
+		roomRepo := repositories.NewRoomRepository()
+		roomService := services.NewRoomService(roomRepo)
+
+		allowedOrigins := []string{"http://localhost:5173"}
+		wsService := services.NewWebSocketServer(allowedOrigins)
+
+		router := mux.NewRouter()
+		RegisterRoomRoutes(router, roomService, wsService)
+
+		roomID := "nonexistent_room"
+
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/rooms/%s", roomID), nil)
+
+		// Act
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "room not found")
+	})
 }

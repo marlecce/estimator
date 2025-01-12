@@ -15,14 +15,14 @@ func ValidateEstimateRequest(req *requests.EstimateRequest) error {
 		return fmt.Errorf("value must be greater than 0")
 	}
 
-	if !isValidEstimationType(req.EstimationType) {
+	if !IsValidEstimationType(req.EstimationType) {
 		return fmt.Errorf("invalid estimation type: %s", req.EstimationType)
 	}
 
 	return nil
 }
 
-func isValidEstimationType(estimationType models.EstimationType) bool {
+func IsValidEstimationType(estimationType models.EstimationType) bool {
 	switch estimationType {
 	case models.EstimationHours, models.EstimationDays, models.EstimationStoryPoints:
 		return true
