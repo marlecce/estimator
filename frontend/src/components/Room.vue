@@ -142,12 +142,11 @@ export default {
       try {
         const response = await apiClient.get(`/rooms/${this.roomId}`);
         this.roomName = response.data.name;
-        this.estimationType = response.data.estimationType;
-        this.hostId = response.data.hostId;
+        this.estimationType = response.data.estimation_type;
+        this.hostId = response.data.host_id;
         this.revealed = response.data.revealed
 
         const estimates = response.data.estimates || [];
-        console.log("stime:", estimates)
         this.participants = (response.data.participants || []).map((participant) => {
           const estimate = estimates.find(
             (e) => e.participant_id === participant.id

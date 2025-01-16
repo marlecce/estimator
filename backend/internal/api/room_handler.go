@@ -80,10 +80,8 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := participant
-
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+	if err := json.NewEncoder(w).Encode(participant); err != nil {
 		log.Printf("Failed to encode response: %s", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
