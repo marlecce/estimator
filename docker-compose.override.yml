@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+      target: dev  # Usa la fase di sviluppo del Dockerfile
+    volumes:
+      - ./backend:/app  # Monta il codice sorgente per hot reload
+      - /app/bin
+    working_dir: /app/cmd/app
+    command: air  # Usa air per lo sviluppo
+    ports:
+      - "8181:8181"
+    environment:
+      - ENV=development
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+      target: development  # Usa la fase di sviluppo del Dockerfile
+    volumes:
+      - ./frontend:/app  # Monta il codice sorgente per hot reload
+      - /app/node_modules
+    command: npm run dev -- --host
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development

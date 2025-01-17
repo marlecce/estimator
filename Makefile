@@ -50,3 +50,22 @@ dev-frontend:
 clean:
 	rm -rf $(BACKEND_DIR)/bin
 	rm -rf $(FRONTEND_DIR)/node_modules $(FRONTEND_DIR)/dist
+
+# 🐳 Docker
+docker-build-backend:
+	docker build -t estimator-backend -f ./backend/Dockerfile .
+
+docker-build-frontend:
+	docker build -t estimator-frontend -f ./frontend/Dockerfile .
+
+docker-compose-up:
+	docker-compose -f docker-compose.yml up
+
+docker-compose-up-dev:
+	docker-compose up
+
+docker-compose-down:
+	docker-compose down
+
+docker-clean:
+	docker system prune -f

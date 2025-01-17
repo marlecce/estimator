@@ -1,11 +1,28 @@
 # Estimator
 
-make all
+## Using Make
+```bash
+    make all
 
-make backend
-make run-backend
-make test-backend
+    make backend
+    make run-backend
+    make test-backend
 
-make dev-frontend
+    make dev-frontend
 
-make clean
+    make clean
+```
+
+# Using Docker
+
+## Development
+
+```bash
+docker compose up
+```
+
+## Production
+
+```bash
+docker-compose -f docker-compose.yml up
+```

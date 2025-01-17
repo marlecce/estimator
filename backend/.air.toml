@@ -1,0 +1,12 @@
+# Imposta la directory principale
+root = "."
+tmp_dir = "tmp"
+
+# Path al file principale
+[build]
+cmd = "go build -o tmp/main cmd/app/main.go"
+bin = "tmp/main"
+include_ext = ["go", "tmpl", "html"]
+
+# Ignora alcune directory
+exclude_dir = ["tmp", "bin"]
