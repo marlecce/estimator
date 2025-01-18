@@ -1,19 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Home from "../components/Home.vue";
-import CreateRoom from "../components/CreateRoom.vue";
-import Room from "../components/Room.vue";
-import Estimation from "../components/Estimation.vue";
-import JoinRoom from "../components/JoinRoom.vue";
-
-/*
-const routes = [
-  { path: "/", name: "Home", component: Home },
-  { path: "/rooms/create", name: "CreateRoom", component: CreateRoom },
-  { path: "/rooms/:roomId", name: "Room", component: Room },
-  { path: "/rooms/:roomId/join", name: "JoinRoom", component: JoinRoom },
-  { path: "/rooms/estimate", name: "Estimate", component: Estimation },
-];
-*/
+import Home from "../views/Home.vue";
+import CreateRoom from "../views/CreateRoom.vue";
+import Room from "../views/Room.vue";
+import JoinRoom from "../views/JoinRoom.vue";
 
 const routes = [
   {
@@ -37,13 +26,7 @@ const routes = [
     name: "room",
     component: Room,
     props: true,
-  },
-  {
-    path: "/rooms/:roomId/estimation",
-    name: "estimation",
-    component: Estimation,
-    props: true,
-  },
+  }
 ];
 
 const router = createRouter({

@@ -1,15 +1,7 @@
 <template>
   <div class="room-container min-h-screen bg-white flex flex-col items-center text-gray-800">
     <!-- Header -->
-    <header class="w-full bg-blue-900 py-6 shadow-md">
-      <h1 class="text-center text-3xl font-bold text-white">
-        Room: <span class="text-blue-300">{{ roomName }}</span>
-      </h1>
-      <p class="text-center text-lg text-blue-100 mt-2">
-        Estimation Type:
-        <span class="font-semibold text-yellow-300">{{ estimationTypeLabel }}</span>
-      </p>
-    </header>
+    <Header :roomName="roomName" :estimationTypeLabel="estimationTypeLabel" />
 
     <div v-if="revealed" class="mt-6 p-4 bg-green-100 text-green-800 rounded-lg shadow">
       <p class="text-lg font-semibold">Estimates have been revealed!</p>
@@ -17,36 +9,12 @@
 
     <!-- Participants Section -->
     <main class="flex flex-col items-center w-full max-w-5xl p-6">
-      <h2 class="text-xl font-semibold mb-4 text-blue-700">Participants</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
-        <div
-          v-for="participant in participants"
-          :key="participant.id"
-          :class="['participant-card', participant.hasEstimated ? 'bg-blue-100' : 'bg-gray-100']"
-          class="flex flex-col items-center border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-lg transition-shadow"
-        >
-          <div
-            class="avatar w-14 h-14 rounded-full bg-blue-500 text-white text-lg font-bold flex items-center justify-center"
-          >
-            {{ participant.name.charAt(0).toUpperCase() }}
-          </div>
-          <p class="mt-2 text-lg font-medium">{{ participant.name }}</p>
-          <p v-if="revealed && participant.revealedEstimate !== null" class="mt-2 text-lg font-semibold text-yellow-600">
-            Estimate: {{ participant.revealedEstimate }}
-          </p>
-          <p v-else-if="participant.hasEstimated && !revealed" class="mt-2 text-sm text-green-600 font-semibold">
-            Estimated
-          </p>
-          <button
-            v-else-if="!isHost(participant.id)"
-            @click="openEstimateDialog(participant.id)"
-            class="mt-3 px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg shadow hover:bg-blue-700"
-            :disabled="participant.hasEstimated"
-          >
-            Submit Estimate
-          </button>
-        </div>
-      </div>
+      <ParticipantsList
+        :participants="participants"
+        :revealed="revealed"
+        :isHost="isHost"
+        @openEstimateDialog="openEstimateDialog"
+      />
     </main>
 
     <!-- Host Actions -->
@@ -104,9 +72,15 @@
 
 <script>
 import apiClient from "../api-client";
+import Header from "../components/Header.vue";
+import ParticipantsList from "../components/ParticipantsList.vue";
 
 export default {
   name: "Room",
+  components: {
+    Header,
+    ParticipantsList
+  },
   data() {
     return {
       roomId: this.$route.params.roomId,
@@ -304,10 +278,6 @@ export default {
 }
 .participant-card:hover {
   transform: translateY(-5px);
-}
-header p {
-  font-size: 1.125rem;
-  margin-top: 0.5rem;
 }
 .text-green-600 {
   color: #16a34a;

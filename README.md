@@ -5,9 +5,10 @@
     make all
 
     make backend
-    make run-backend
     make test-backend
+    make run-backend
 
+    make install-frontend
     make dev-frontend
 
     make clean
