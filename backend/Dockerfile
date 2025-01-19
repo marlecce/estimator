@@ -9,7 +9,7 @@ RUN go build -o estimator cmd/app/main.go
 # Stage 2: Production
 FROM alpine:latest
 WORKDIR /root/
-COPY --from=builder /app/estimator .
+COPY --from=builder /app/bin/estimator .
 EXPOSE 8080
 CMD ["./estimator"]
 
@@ -29,4 +29,4 @@ COPY ./backend .
 EXPOSE 8181
 
 # Default command for development
-CMD ["air"]
+CMD ["air", "-c", ".air.toml"]

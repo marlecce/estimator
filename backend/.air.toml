@@ -2,11 +2,15 @@
 root = "."
 tmp_dir = "tmp"
 
-# Path al file principale
 [build]
-cmd = "go build -o tmp/main cmd/app/main.go"
-bin = "tmp/main"
-include_ext = ["go", "tmpl", "html"]
-
-# Ignora alcune directory
-exclude_dir = ["tmp", "bin"]
+  cmd = "go build -o /app/bin/estimator ./cmd/app/main.go"
+  bin = "/app/bin/estimator"
+  kill = true
+  include_dir = ["."]
+  exclude_dir = ["tmp", "vendor"]
+[log]
+  time = true
+  color = true
+[watcher]
+  poll = true  # Forza il polling
+  interval = 1000  # Imposta l'intervallo di polling (in millisecondi)

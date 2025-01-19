@@ -60,14 +60,6 @@ func (h *RoomHandler) JoinRoom(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	roomID := vars["room_id"]
 
-	// TODO check if room exists
-	/*
-		if !h.roomService.RoomExists(roomID) {
-			http.Error(w, "Room does not exist", http.StatusNotFound)
-			return
-		}
-	*/
-
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return

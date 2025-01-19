@@ -5,10 +5,10 @@ services:
       dockerfile: ./backend/Dockerfile
       target: dev  # Usa la fase di sviluppo del Dockerfile
     volumes:
-      - ./backend:/app  # Monta il codice sorgente per hot reload
-      - /app/bin
-    working_dir: /app/cmd/app
-    command: air  # Usa air per lo sviluppo
+      - ./backend:/app:cached  # Monta il codice sorgente per hot reload
+      - ./backend/bin:/app/bin
+    working_dir: /app
+    command: air -c .air.toml
     ports:
       - "8181:8181"
     environment:
