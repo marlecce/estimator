@@ -5,12 +5,17 @@ tmp_dir = "tmp"
 [build]
   cmd = "go build -o /app/bin/estimator ./cmd/app/main.go"
   bin = "/app/bin/estimator"
-  kill = true
-  include_dir = ["."]
+  include_dir = ["cmd", "internal", "pkg", "."]
+  include_ext = ["go", "yaml"]
   exclude_dir = ["tmp", "vendor"]
+  kill = true
+  restart = false      # Evita di riavviare se la build fallisce
 [log]
   time = true
   color = true
 [watcher]
   poll = true  # Forza il polling
-  interval = 1000  # Imposta l'intervallo di polling (in millisecondi)
+  interval = 100  # Imposta l'intervallo di polling (in millisecondi)
+[misc]
+# Delete tmp directory on exit
+clean_on_exit = true

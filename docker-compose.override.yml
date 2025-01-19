@@ -3,9 +3,9 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-      target: dev  # Usa la fase di sviluppo del Dockerfile
+      target: dev # Usa la fase di sviluppo del Dockerfile
     volumes:
-      - ./backend:/app:cached  # Monta il codice sorgente per hot reload
+      - ./backend:/app:delegated # Monta il codice sorgente per hot reload
       - ./backend/bin:/app/bin
     working_dir: /app
     command: air -c .air.toml
@@ -18,9 +18,9 @@ services:
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
-      target: development  # Usa la fase di sviluppo del Dockerfile
+      target: development # Usa la fase di sviluppo del Dockerfile
     volumes:
-      - ./frontend:/app  # Monta il codice sorgente per hot reload
+      - ./frontend:/app # Monta il codice sorgente per hot reload
       - /app/node_modules
     command: npm run dev -- --host
     ports:
