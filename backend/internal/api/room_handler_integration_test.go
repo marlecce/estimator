@@ -17,89 +17,115 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCreateRoomIntegration(t *testing.T) {
-	// Arrange
+func setupRouter() *mux.Router {
 	roomRepo := repositories.NewRoomRepository()
 	roomService := services.NewRoomService(roomRepo)
-
 	allowedOrigins := []string{"http://localhost:5173"}
 	wsService := services.NewWebSocketServer(allowedOrigins)
-
 	router := mux.NewRouter()
 	RegisterRoomRoutes(router, roomService, wsService)
+	return router
+}
 
-	payload := requests.CreateRoomRequest{
-		Name:           "Test Room",
-		HostName:       "John Doe",
-		EstimationType: models.EstimationHours,
-	}
-	body, _ := json.Marshal(payload)
+func TestCreateRoom(t *testing.T) {
+	t.Run("should create room successfully", func(t *testing.T) {
+		// Arrange
+		router := setupRouter()
+		payload := requests.CreateRoomRequest{
+			Name:           "Room Test",
+			HostName:       "Alice",
+			EstimationType: models.EstimationHours,
+		}
+		body, _ := json.Marshal(payload)
+		req, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
 
-	req, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+		// Act
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
 
-	// Act
-	rr := httptest.NewRecorder()
-	router.ServeHTTP(rr, req)
+		// Assert
+		assert.Equal(t, http.StatusCreated, rr.Code)
+		var response responses.CreatedRoomResponse
+		err := json.Unmarshal(rr.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, response.RoomID)
+		assert.NotEmpty(t, response.Host.ID)
+		assert.Equal(t, "Alice", response.Host.Name)
+	})
 
-	// Assert
-	assert.Equal(t, http.StatusCreated, rr.Code)
+	t.Run("should return 400 for invalid payload", func(t *testing.T) {
+		// Arrange
+		router := setupRouter()
+		req, _ := http.NewRequest("POST", "/rooms", bytes.NewReader([]byte("invalid_payload")))
+		req.Header.Set("Content-Type", "application/json")
 
-	var response responses.CreatedRoomResponse
-	err := json.Unmarshal(rr.Body.Bytes(), &response)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, response.RoomID)
-	assert.NotEmpty(t, response.Host.ID)
-	assert.NotEmpty(t, response.Host.Name)
+		// Act
+		rr := httptest.NewRecorder()
+		router.ServeHTTP(rr, req)
+
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, rr.Code)
+		assert.Contains(t, rr.Body.String(), "Invalid request")
+	})
 }
 
 func TestJoinRoomIntegration(t *testing.T) {
-	// Arrange
-	roomRepo := repositories.NewRoomRepository()
-	roomService := services.NewRoomService(roomRepo)
+	t.Run("should join room successfully", func(t *testing.T) {
+		// Arrange
+		router := setupRouter()
 
-	allowedOrigins := []string{"http://localhost:5173"}
-	wsService := services.NewWebSocketServer(allowedOrigins)
+		// Create a room
+		roomPayload := requests.CreateRoomRequest{
+			Name:           "Room Test",
+			HostName:       "Alice",
+			EstimationType: models.EstimationStoryPoints,
+		}
+		roomBody, _ := json.Marshal(roomPayload)
+		roomReq, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(roomBody))
+		roomReq.Header.Set("Content-Type", "application/json")
+		roomResp := httptest.NewRecorder()
+		router.ServeHTTP(roomResp, roomReq)
+		assert.Equal(t, http.StatusCreated, roomResp.Code)
 
-	router := mux.NewRouter()
-	RegisterRoomRoutes(router, roomService, wsService)
+		var roomResponse responses.CreatedRoomResponse
+		err := json.Unmarshal(roomResp.Body.Bytes(), &roomResponse)
+		assert.NoError(t, err)
+		roomID := roomResponse.RoomID
 
-	// Create a room
-	roomPayload := requests.CreateRoomRequest{
-		Name:           "Test Room2",
-		HostName:       "John Doe2",
-		EstimationType: models.EstimationStoryPoints,
-	}
-	roomBody, _ := json.Marshal(roomPayload)
-	roomReq, _ := http.NewRequest("POST", "/rooms", bytes.NewReader(roomBody))
-	roomReq.Header.Set("Content-Type", "application/json")
-	roomResp := httptest.NewRecorder()
-	router.ServeHTTP(roomResp, roomReq)
+		// Join the room
+		participantPayload := requests.JoinRoomRequest{Name: "Bob"}
+		participantBody, _ := json.Marshal(participantPayload)
+		participantReq, _ := http.NewRequest("POST", fmt.Sprintf("/rooms/%s/join", roomID), bytes.NewReader(participantBody))
+		participantReq.Header.Set("Content-Type", "application/json")
+		participantResp := httptest.NewRecorder()
+		router.ServeHTTP(participantResp, participantReq)
 
-	assert.Equal(t, http.StatusCreated, roomResp.Code)
+		// Assert
+		assert.Equal(t, http.StatusOK, participantResp.Code)
+		var participantResponse models.Participant
+		err = json.Unmarshal(participantResp.Body.Bytes(), &participantResponse)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, participantResponse.ID)
+		assert.Equal(t, "Bob", participantResponse.Name)
+	})
 
-	var roomResponse responses.CreatedRoomResponse
-	err := json.Unmarshal(roomResp.Body.Bytes(), &roomResponse)
-	assert.NoError(t, err)
-	roomID := roomResponse.RoomID
+	t.Run("should return 400 for non-existent room", func(t *testing.T) {
+		// Arrange
+		router := setupRouter()
+		participantPayload := requests.JoinRoomRequest{Name: "Bob"}
+		participantBody, _ := json.Marshal(participantPayload)
+		participantReq, _ := http.NewRequest("POST", "/rooms/nonexistent/join", bytes.NewReader(participantBody))
+		participantReq.Header.Set("Content-Type", "application/json")
 
-	// Add a participant
-	participantPayload := requests.JoinRoomRequest{
-		Name: "John Doe",
-	}
-	participantBody, _ := json.Marshal(participantPayload)
-	participantReq, _ := http.NewRequest("POST", fmt.Sprintf("/rooms/%s/join", roomID), bytes.NewReader(participantBody))
-	participantReq.Header.Set("Content-Type", "application/json")
-	participantResp := httptest.NewRecorder()
-	router.ServeHTTP(participantResp, participantReq)
+		// Act
+		participantResp := httptest.NewRecorder()
+		router.ServeHTTP(participantResp, participantReq)
 
-	// Assert
-	assert.Equal(t, http.StatusOK, participantResp.Code)
-
-	var participantResponse models.Participant
-	err = json.Unmarshal(participantResp.Body.Bytes(), &participantResponse)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, participantResponse.ID)
+		// Assert
+		assert.Equal(t, http.StatusBadRequest, participantResp.Code)
+		assert.Contains(t, participantResp.Body.String(), "room with ID nonexistent not found")
+	})
 }
 
 func TestGetRoomDetails(t *testing.T) {
