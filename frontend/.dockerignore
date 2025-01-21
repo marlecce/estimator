@@ -1,0 +1,34 @@
+# Node.js dependencies
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+/dist
+/build
+
+# Vue.js config files
+*.env
+*.env.local
+*.env.*.local
+
+# Logs
+*.log
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*~
+
+# Dockerfile, docker-compose.yml, etc., if not required in the image
+docker-compose.override.yml
+Dockerfile
+*.md
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp

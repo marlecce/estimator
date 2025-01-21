@@ -1,0 +1,33 @@
+# Ignora la directory Git
+.git
+.gitignore
+
+# Ignora gli eseguibili compilati
+*.exe
+*.out
+*.o
+
+# Ignora le dipendenze scaricate nella cache locale
+vendor/
+go.sum
+
+# Ignora gli output della build
+bin/
+dist/
+
+# Ignora i file temporanei e di sistema
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Ignora i file dell'IDE/editor
+.vscode/
+.idea/
+*.iml
+
+# Ignora configurazioni locali
+.env
+.env.*
+config.local.*
