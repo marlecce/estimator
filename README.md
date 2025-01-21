@@ -16,7 +16,7 @@ Estimator is a collaborative task estimation application designed to streamline 
 
 Estimator is implemented as a monorepo with the following components:
 
-- Backend: A RESTful API built with Go.
+- Backend: A RESTful API built with Go and a WebSocket server for real-time communication between hosts and participants.
 - Frontend: A user-friendly interface developed in Vue.js.
 - CI/CD: Automated pipelines for testing, building, and deploying using GitHub Actions.
 
