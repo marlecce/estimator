@@ -18,7 +18,6 @@ Estimator is implemented as a monorepo with the following components:
 
 - Backend: A RESTful API built with Go.
 - Frontend: A user-friendly interface developed in Vue.js.
-
 - CI/CD: Automated pipelines for testing, building, and deploying using GitHub Actions.
 
 ## Repository Structure
