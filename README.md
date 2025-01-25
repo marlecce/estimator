@@ -39,7 +39,7 @@ Estimator is implemented as a monorepo with the following components:
 
 - Node.js 23+
 
-- Docker and Docker Compose
+- Docker and Docker Compose or Make
 
 ## Setup
 
