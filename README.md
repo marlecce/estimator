@@ -43,36 +43,37 @@ Estimator is implemented as a monorepo with the following components:
 
 ## Setup
 
-1. Clone the repository:
+### Clone the repository:
 
 ```bash
 git clone https://github.com/yourusername/estimator.git
 cd estimator
 ```
-
-2. Install dependencies:
-
-```bash
-make install-frontend
-```
-
-3. Build the project:
-
-```bash
-make all
-```
-
-4. Run the development environment:
-
-```bash
-make run-backend
-make dev-frontend
-```
-
-## Docker Usage
+### Docker Usage
 
 Build and run the application using Docker:
 
 ```bash
 docker compose up
+```
+
+### Make Usage
+
+1. Install dependencies:
+
+```bash
+make install-frontend
+```
+
+2. Build the project:
+
+```bash
+make all
+```
+
+3. Run the development environment:
+
+```bash
+make run-backend
+make dev-frontend
 ```
